@@ -8,13 +8,13 @@ TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 def query_ai(prompt):
-    url = "https://openrouter.ai/api/v1/chat/completions"
+    url = "https://openrouter.ai/api/v1/chat/completions"  # ← без пробелов
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json"
     }
     payload = {
-        "model": "google/gemma-2-2b-it",
+        "model": "tngtech/deepseek-r1t2-chimera:free",
         "messages": [
             {"role": "system", "content": "Ты — ИИ-Денчик на Durka-3.0. Отвечай коротко, дерзко и по делу."},
             {"role": "user", "content": prompt}
@@ -49,7 +49,7 @@ def webhook():
             reply = query_ai(text)
 
         requests.post(
-            f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
+            f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",  # ← без пробелов
             json={"chat_id": chat_id, "text": reply},
             timeout=5
         )
