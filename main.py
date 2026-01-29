@@ -5,16 +5,16 @@ from flask import Flask, request, jsonify
 app = Flask(__name__)
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")  # ← теперь правильно!
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 def query_ai(prompt):
-    url = "https://api.deepseek.com/chat/completions"
+    url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
-        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json"
     }
     payload = {
-        "model": "deepseek-chat",
+        "model": "google/gemma-2-2b-it",  # бесплатная, быстрая
         "messages": [
             {"role": "system", "content": "Ты — полезный, краткий и вежливый помощник."},
             {"role": "user", "content": prompt}
@@ -25,11 +25,10 @@ def query_ai(prompt):
     try:
         resp = requests.post(url, headers=headers, json=payload, timeout=20)
         if resp.status_code == 200:
-            data = resp.json()
-            return data["choices"][0]["message"]["content"].strip()
+            return resp.json()["choices"][0]["message"]["content"].strip()
         else:
-            error_msg = resp.json().get("error", {}).get("message", "Unknown error")
-            return f"Ошибка ИИ: {resp.status_code} — {error_msg[:80]}"
+            error = resp.json().get("error", {}).get("message", "Unknown")
+            return f"Ошибка: {resp.status_code} — {error[:80]}"
     except Exception as e:
         return f"Сеть: {str(e)[:80]}"
 
@@ -45,19 +44,17 @@ def webhook():
         text = msg.get("text", "").strip()
 
         if text == "/start":
-            reply = "Привет! Я — ИИ-Денчик на базе Durka-3.0 Чо хотел?!"
+            reply = "Привет! Я — ИИ-Денчик на Durka-3.0. Чо хотел?!"
         else:
             reply = query_ai(text)
 
-        send_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
         requests.post(
-            send_url,
+            f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
             json={"chat_id": chat_id, "text": reply},
             timeout=5
         )
-
     except Exception as e:
-        print(f"❌ Ошибка: {e}")
+        print(f"Ошибка: {e}")
 
     return jsonify({"ok": True})
 
