@@ -5,22 +5,16 @@ from flask import Flask, request, jsonify
 app = Flask(__name__)
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-
-# Проверка на старте (только для логов)
-if not TELEGRAM_TOKEN:
-    print("⚠️ TELEGRAM_TOKEN не задан")
-if not OPENROUTER_API_KEY:
-    print("⚠️ OPENROUTER_API_KEY не задан")
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")  # ← теперь правильно!
 
 def query_ai(prompt):
-    url = "https://openrouter.ai/api/v1/chat/completions"
+    url = "https://api.deepseek.com/chat/completions"
     headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
         "Content-Type": "application/json"
     }
     payload = {
-        "model": "google/gemma-2-2b-it",
+        "model": "deepseek-chat",
         "messages": [
             {"role": "system", "content": "Ты — полезный, краткий и вежливый помощник."},
             {"role": "user", "content": prompt}
@@ -51,7 +45,7 @@ def webhook():
         text = msg.get("text", "").strip()
 
         if text == "/start":
-            reply = "Привет! Я — Денчик на базе Дурка-3. Чо хочешь?!"
+            reply = "Привет! Я — ИИ-бот на базе DeepSeek. Задайте любой вопрос!"
         else:
             reply = query_ai(text)
 
