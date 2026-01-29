@@ -14,9 +14,9 @@ def query_ai(prompt):
         "Content-Type": "application/json"
     }
     payload = {
-        "model": "google/gemma-2-2b-it",  # бесплатная, быстрая
+        "model": "google/gemma-2-2b-it",
         "messages": [
-            {"role": "system", "content": "Ты — полезный, краткий и вежливый помощник."},
+            {"role": "system", "content": "Ты — ИИ-Денчик на Durka-3.0. Отвечай коротко, дерзко и по делу."},
             {"role": "user", "content": prompt}
         ],
         "max_tokens": 512,
@@ -28,7 +28,7 @@ def query_ai(prompt):
             return resp.json()["choices"][0]["message"]["content"].strip()
         else:
             error = resp.json().get("error", {}).get("message", "Unknown")
-            return f"Ошибка: {resp.status_code} — {error[:80]}"
+            return f"Ошибка ИИ: {resp.status_code} — {error[:80]}"
     except Exception as e:
         return f"Сеть: {str(e)[:80]}"
 
@@ -53,8 +53,9 @@ def webhook():
             json={"chat_id": chat_id, "text": reply},
             timeout=5
         )
+
     except Exception as e:
-        print(f"Ошибка: {e}")
+        print(f"❌ Ошибка: {e}")
 
     return jsonify({"ok": True})
 
