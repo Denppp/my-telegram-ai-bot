@@ -4,18 +4,16 @@ from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-# Загружаем токены из переменных окружения (безопасно!)
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
-# Проверка на старте
+# Проверка на старте (только для логов)
 if not TELEGRAM_TOKEN:
-    print("⚠️ ОШИБКА: Не задан TELEGRAM_TOKEN")
+    print("⚠️ TELEGRAM_TOKEN не задан")
 if not OPENROUTER_API_KEY:
-    print("⚠️ ОШИБКА: Не задан OPENROUTER_API_KEY")
+    print("⚠️ OPENROUTER_API_KEY не задан")
 
 def query_ai(prompt):
-    """Запрос к OpenRouter (OpenAI-compatible API)"""
     url = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
@@ -45,4 +43,30 @@ def query_ai(prompt):
 def webhook():
     try:
         update = request.get_json()
-        if not
+        if not update or "message" not in update:
+            return jsonify({"ok": True})
+
+        msg = update["message"]
+        chat_id = msg["chat"]["id"]
+        text = msg.get("text", "").strip()
+
+        if text == "/start":
+            reply = "Привет! Я — ИИ-бот на базе Gemma-2. Задайте любой вопрос!"
+        else:
+            reply = query_ai(text)
+
+        send_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+        requests.post(
+            send_url,
+            json={"chat_id": chat_id, "text": reply},
+            timeout=5
+        )
+
+    except Exception as e:
+        print(f"❌ Ошибка: {e}")
+
+    return jsonify({"ok": True})
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)
