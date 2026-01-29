@@ -45,7 +45,7 @@ def webhook():
         text = msg.get("text", "").strip()
 
         if text == "/start":
-            reply = "Привет! Я — ИИ-бот на базе DeepSeek. Задайте любой вопрос!"
+            reply = "Привет! Я — ИИ-Денчик на базе Durka-3.0 Чо хотел?!"
         else:
             reply = query_ai(text)
 
