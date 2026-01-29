@@ -1,56 +1,56 @@
-# main.py — Telegram-бот с ИИ через Hugging Face Inference API
 import os
 import requests
 from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
+# 🔑 Загружаем токены
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 HF_TOKEN = os.getenv("HF_TOKEN")
-HF_MODEL = "microsoft/Phi-3-mini-4k-instruct"  # можно заменить на "meta-llama/Llama-3.1-8B-Instruct"
+HF_MODEL = "microsoft/Phi-3-mini-4k"
 
 def query_hf(prompt):
-    API_URL = "https://api-inference.huggingface.co/models/" + HF_MODEL
+    url = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
     headers = {"Authorization": f"Bearer {HF_TOKEN}"}
-    payload = {
-        "inputs": prompt,
-        "parameters": {
-            "max_new_tokens": 512,
-            "temperature": 0.7,
-            "top_p": 0.9
-        }
-    }
+    payload = {"inputs": prompt, "parameters": {"max_new_tokens": 512}}
     try:
-        response = requests.post(API_URL, headers=headers, json=payload, timeout=10)
-        data = response.json()
+        resp = requests.post(url, headers=headers, json=payload, timeout=10)
+        data = resp.json()
         if isinstance(data, list):
-            return data[0].get("generated_text", "Ошибка генерации")
+            return data[0].get("generated_text", "Ошибка")
         return str(data.get("generated_text", data))
     except Exception as e:
-        return f"Ошибка: {str(e)[:60]}"
+        return f"ИИ недоступен: {str(e)[:50]}"
 
 @app.route("/", methods=["POST"])
-def telegram_webhook():
-    update = request.get_json()
-    if "message" not in update:
-        return jsonify({"ok": True})
+def webhook():
+    try:
+        update = request.get_json()
+        if not update or "message" not in update:
+            return jsonify({"ok": True})
 
-    msg = update["message"]
-    chat_id = msg["chat"]["id"]
-    text = msg.get("text", "")
+        msg = update["message"]
+        chat_id = msg["chat"]["id"]
+        text = msg.get("text", "")
 
-    if text == "/start":
-        reply = "Привет! Я — ИИ-помощник. Пишите — отвечу."
-    else:
-        # Формируем промпт для модели
-        prompt = f"<|user|>{text}<|assistant|>"
-        reply = query_hf(prompt)
+        if text == "/start":
+            reply = "Привет! Я — Денчик на базе Phi-3. Пишите — отвечу."
+        else:
+            prompt = f"<|user|>{text}<|assistant|>"
+            reply = query_hf(prompt)
 
-    requests.post(
-        f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
-        json={"chat_id": chat_id, "text": reply}
-    )
+        # Отправка ответа
+        requests.post(
+            f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
+            json={"chat_id": chat_id, "text": reply},
+            timeout=5
+        )
+
+    except Exception as e:
+        print("Ошибка:", e)
+
     return jsonify({"ok": True})
 
 if __name__ == "__main__":
+    # ✅ КРИТИЧЕСКИ ВАЖНО: правильно!
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
